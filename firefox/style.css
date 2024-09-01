@@ -1,1 +1,5 @@
+/** github.com/0yz **/
 
+div[class^='Player-fullPlayerContainer-'] video{
+    object-fit: cover!important;
+  }
