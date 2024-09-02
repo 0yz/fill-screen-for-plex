@@ -4,7 +4,8 @@
  	
 A browser extension that zooms the video in to make it cover the entire screen and remove black bars without stretching on Plex.
 
-[Add to Firefox](https://addons.mozilla.org/de/firefox/addon/fill-screen-for-plex/?utm_source=addons.mozilla.org&utm_medium=referral&utm_content=search)
+[Add to Firefox](https://addons.mozilla.org/de/firefox/addon/fill-screen-for-plex/)
+[Add to Chrome](https://chromewebstore.google.com/detail/fill-screen-for-plex/ndoebjdlhlehlhnfbimiailngggohmni)
 
 1. Go to Plex
 2. Play a video
