@@ -8,6 +8,8 @@ A browser extension that zooms the video in to make it cover the entire screen a
 
 [Add to Chrome](https://chromewebstore.google.com/detail/fill-screen-for-plex/ndoebjdlhlehlhnfbimiailngggohmni)
 
+**Instructions:**
+
 1. Go to Plex
 2. Play a video
 3. Click the extension / Click extension again to disable.
