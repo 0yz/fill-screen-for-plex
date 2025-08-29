@@ -4,10 +4,52 @@ const tabStates = new Map();
 // Handle extension icon clicks
 browser.browserAction.onClicked.addListener(async (tab) => {
   try {
-    // Send message to content script to check if this is a Plex page
-    const response = await browser.tabs.sendMessage(tab.id, { action: 'checkPlex' });
+    // Inject script to check if this is a Plex page
+    const results = await browser.tabs.executeScript(tab.id, {
+      code: `
+        (function() {
+          // Check if this is a Plex page by looking for Plex-specific elements and URLs
+          const hostname = window.location.hostname.toLowerCase();
+          const pathname = window.location.pathname;
+          
+          // Official Plex URLs
+          if (hostname.includes('plex.tv') || hostname.includes('plex.direct')) {
+            return true;
+          }
+          
+          // Local Plex installations (localhost, 127.0.0.1, local IPs)
+          if (hostname === 'localhost' || 
+              hostname === '127.0.0.1' || 
+              hostname.match(/^192\\.168\\.\\d+\\.\\d+$/) ||
+              hostname.match(/^10\\.\\d+\\.\\d+\\.\\d+$/) ||
+              hostname.match(/^172\\.(1[6-9]|2\\d|3[01])\\.\\d+\\.\\d+$/)) {
+            
+            // Check for Plex-specific indicators
+            const plexIndicators = [
+              // Check for Plex in title
+              document.title.toLowerCase().includes('plex'),
+              // Check for Plex-specific meta tags
+              !!document.querySelector('meta[name="apple-mobile-web-app-title"][content*="Plex"]'),
+              // Check for Plex-specific elements
+              !!document.querySelector('[class*="plex"], [id*="plex"]'),
+              // Check for Plex web client specific elements
+              !!document.querySelector('div[class*="application"], div[class*="App"]') && 
+                document.body.innerHTML.includes('web-client'),
+              // Check URL path for Plex patterns
+              pathname.includes('/web/') || pathname === '/' || pathname.includes('/desktop')
+            ];
+            
+            return plexIndicators.some(indicator => indicator);
+          }
+          
+          return false;
+        })();
+      `
+    });
     
-    if (response && response.isPlex) {
+    const isPlex = results && results[0];
+    
+    if (isPlex) {
       const currentState = tabStates.get(tab.id) || false;
       
       if (currentState) {
@@ -20,46 +62,15 @@ browser.browserAction.onClicked.addListener(async (tab) => {
         tabStates.set(tab.id, true);
       }
     } else {
-      // Not a Plex page
-      console.log("This extension only works on Plex pages");
-      browser.notifications.create({
-        type: "basic",
-        iconUrl: "icons/icon-48.png",
-        title: "Fill Screen for Plex",
-        message: "This extension only works on Plex pages (app.plex.tv, localhost, etc.)"
-      });
+      // Not a Plex page - just log it, no notifications needed
+      console.log("This extension only works on Plex pages (app.plex.tv, localhost, local IPs, etc.)");
     }
   } catch (error) {
     console.error("Extension error:", error);
-    // Fallback: try to inject content script if not already injected
-    try {
-      await browser.tabs.executeScript(tab.id, { file: "content-script.js" });
-      // Retry the click operation after content script is injected
-      setTimeout(async () => {
-        try {
-          const response = await browser.tabs.sendMessage(tab.id, { action: 'checkPlex' });
-          if (response && response.isPlex) {
-            await browser.tabs.insertCSS(tab.id, { file: "style.css" });
-            tabStates.set(tab.id, true);
-          }
-        } catch (retryError) {
-          console.error("Retry failed:", retryError);
-        }
-      }, 100);
-    } catch (injectionError) {
-      console.error("Failed to inject content script:", injectionError);
-    }
   }
 });
 
 // Clean up tab state when tab is closed
 browser.tabs.onRemoved.addListener((tabId) => {
   tabStates.delete(tabId);
-});
-
-// Handle messages from content scripts
-browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === 'plexDetected') {
-    console.log(`Plex detected on: ${message.hostname}`);
-  }
 });
